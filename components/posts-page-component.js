@@ -1,6 +1,7 @@
 import { USER_POSTS_PAGE } from "../routes.js";
 import { renderHeaderComponent } from "./header-component.js";
-import { posts, goToPage } from "../index.js";
+import { posts, goToPage, user } from "../index.js";
+import { likePost, dislikePost } from "../api.js";    
 
 export function renderPostsPageComponent({ appEl }) {
   // @TODO: реализовать рендер постов из api
@@ -70,12 +71,62 @@ export function renderPostsPageComponent({ appEl }) {
     element: document.querySelector(".header-container"),
   });
 
-  // Навешиваем клик для перехода на посты пользователя
+  // Обработчик клика на автора поста для перехода на его страницу
   for (let userEl of document.querySelectorAll(".post-header")) {
     userEl.addEventListener("click", () => {
       goToPage(USER_POSTS_PAGE, {
         userId: userEl.dataset.userId,
       });
+    });
+  }
+
+  // Обработчик кликов на кнопки лайков
+  // Ищем все кнопки лайков на странице и перебираем их циклом
+  for (let likeButton of document.querySelectorAll(".like-button")){
+    likeButton.addEventListener("click",(event) =>{
+      event.stopPropagation(); // Не даёт клику случайно нажать на родительские элементы
+      // 1. Проверяем: вошёл ли пользователь на сайт?
+      if(!user){
+        alert("Ставить лайки могут только авторезированные пользователи!");
+        return; // Если не вошел — прерываем работу
+      }
+      // 2. Узнаем ID поста из атрибута data-post-id кнопки
+      const id = likeButton.dataset.postId; //likeButton.dataset.postId 
+
+      // 3. Находим этот пост в нашем общем массиве posts
+      const currentPost = posts.find((post) => post.id === id);
+
+      // Подготавливаем токен авторизации
+      const token = `Bearer ${user.token}`;
+
+      // Переключатель: снять или поставить
+      if (currentPost.isLiked) {
+
+        // Если ДА — вызываем снятия лайка:
+        dislikePost({ token, id })
+          .then((data) => {
+            currentPost.isLiked = false;
+            currentPost.likes = data.post.likes;
+            renderPostsPageComponent({ appEl });
+          })
+          .catch((error) => {
+            alert("Не удалось убрать лайк");
+          });
+
+      } else {
+
+        // Если НЕТ — вызываем постановки лайка:
+        likePost({ token, id })
+          .then((data) => {
+            currentPost.isLiked = true;
+            currentPost.likes = data.post.likes;
+            renderPostsPageComponent({ appEl });
+          })
+          .catch((error) => {
+            alert("Не удалось поставить лайк");
+          });
+
+      }
     });
   }
 }

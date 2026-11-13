@@ -99,3 +99,32 @@ export function getUserPosts({ token, userId }) {
       return data.posts; // возвращаем массив постов этого автора
     });
 }
+
+// Поставить лайк посту
+export function likePost({ token, id }) {
+  return fetch(`${postsHost}/${id}/like`, {
+    method: "POST",
+    headers: {
+      Authorization: token,
+    },
+  }).then((response) => {
+    if (response.status === 401) {
+      throw new Error("Нет авторизации");
+    }
+    return response.json();
+  });
+}
+// снять лайк с поста 
+export function dislikePost({ token, id }){
+  return fetch (`${postsHost}/${id}/dislike`, {
+    method: "POST",
+    headers: {
+      Authorization: token,
+    }
+  }).then ((response) => {
+    if(response.status === 401){
+      throw new Error("Нет авторизавции");
+    }
+    return response.json();
+  })
+}
